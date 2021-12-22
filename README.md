@@ -1,2 +1,2 @@
 ## 软件加密模块
-test 1.0
+requirement： Crypto,pycryptodome,pyqt5
