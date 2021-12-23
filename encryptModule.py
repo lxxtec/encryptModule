@@ -9,7 +9,7 @@ from datetime import timedelta, datetime
 from datetime import date
 from random import choice
 import argparse
-
+from uuid import getnode
 class Encryption:
     def __init__(self):
         self.privateKey = """-----BEGIN RSA PRIVATE KEY-----
@@ -28,13 +28,15 @@ class Encryption:
                             k5L2B7+48xZhfvVHCJyNyRxPuAS76CK3MLGLsL3Re1s=
                             -----END RSA PRIVATE KEY-----"""
 
+
         self.settings = QSettings(
             "HKEY_CURRENT_USER\\Software\\SilentCode", QSettings.NativeFormat)
         self.tryMode = False
         self.singleReg = False
         self.outDated = False
+        self.mac=self.AES_encrypt(self.get_mac())
         if self.settings.value('regMask') == None:  # 初次运行，自动进入试用模式
-            self.settings.setValue('regMask', self.randStr(10))
+            self.settings.setValue('regMask',self.mac)
             self.settings.setValue('isRegistered', 0)
             self.settings.setValue('isTryMode', 1)
             self.settings.setValue('lastDate', self.AES_encrypt(str(date.today()+timedelta(days=10))))
@@ -44,6 +46,11 @@ class Encryption:
 
         self.checkRegStatus()
         self.checkWorking()
+
+    def get_mac(self):
+        address = hex(getnode())[2:]
+        mac = '-'.join(address[i:i + 2] for i in range(0, len(address), 2))
+        return mac
 
     def checkRegStatus(self):
         if self.settings.value('isRegistered') == 0:
@@ -71,7 +78,8 @@ class Encryption:
                     '%Y-%m-%d').date()).days > -1
         isValid2 = (date.today()-datetime.strptime(self.thisDate,
                     '%Y-%m-%d').date()).days > -1
-        if hasLeft and isValid1 and isValid2:
+        isValid3 = (self.mac==self.localCode)
+        if hasLeft and isValid1 and isValid2 and isValid3:
             self.working = True
         else:
             self.working = False
@@ -93,7 +101,7 @@ class Encryption:
             lastDate = datetime.strptime(self.lastDate, '%Y-%m-%d').date()
             self.settings.setValue('lastDate', self.AES_encrypt(str(lastDate+timedelta(days=365*eval(s2)))))
             # 重制机器码
-            self.settings.setValue('regMask', self.randStr(10))
+            #self.settings.setValue('regMask', self.randStr(10))
             self.checkRegStatus()
             self.checkWorking()
             self.singleReg = True
