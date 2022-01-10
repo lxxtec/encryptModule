@@ -1,7 +1,7 @@
 from Crypto import Random
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
-from binascii import b2a_hex,a2b_hex
+from binascii import b2a_hex, a2b_hex
 from Crypto.Cipher import PKCS1_v1_5 as PKCS1_cipher
 import base64
 from PyQt5.QtCore import QSettings
@@ -10,6 +10,8 @@ from datetime import date
 from random import choice
 import argparse
 from uuid import getnode
+
+
 class Encryption:
     def __init__(self):
         self.privateKey = """-----BEGIN RSA PRIVATE KEY-----
@@ -28,20 +30,22 @@ class Encryption:
                             k5L2B7+48xZhfvVHCJyNyRxPuAS76CK3MLGLsL3Re1s=
                             -----END RSA PRIVATE KEY-----"""
 
-
         self.settings = QSettings(
             "HKEY_CURRENT_USER\\Software\\SilentCode", QSettings.NativeFormat)
         self.tryMode = False
         self.singleReg = False
         self.outDated = False
-        self.mac=self.AES_encrypt(self.get_mac())
+        self.mac = self.AES_encrypt(self.get_mac())
         if self.settings.value('regMask') == None:  # 初次运行，自动进入试用模式
-            self.settings.setValue('regMask',self.mac)
+            self.settings.setValue('regMask', self.mac)
             self.settings.setValue('isRegistered', 0)
             self.settings.setValue('isTryMode', 1)
-            self.settings.setValue('lastDate', self.AES_encrypt(str(date.today()+timedelta(days=10))))
-            self.settings.setValue('firstRun', self.AES_encrypt(str(date.today())))
-            self.settings.setValue('thisRun', self.AES_encrypt(str(date.today())))
+            self.settings.setValue('lastDate', self.AES_encrypt(
+                str(date.today()+timedelta(days=10))))
+            self.settings.setValue(
+                'firstRun', self.AES_encrypt(str(date.today())))
+            self.settings.setValue(
+                'thisRun', self.AES_encrypt(str(date.today())))
             self.tryMode = True
 
         self.checkRegStatus()
@@ -78,7 +82,7 @@ class Encryption:
                     '%Y-%m-%d').date()).days > -1
         isValid2 = (date.today()-datetime.strptime(self.thisDate,
                     '%Y-%m-%d').date()).days > -1
-        isValid3 = (self.mac==self.localCode)
+        isValid3 = (self.mac == self.localCode)
         if hasLeft and isValid1 and isValid2 and isValid3:
             self.working = True
         else:
@@ -86,6 +90,8 @@ class Encryption:
 
     def decrypt(self, code):
         if code == '':
+            return
+        if self.settings.value('lastCode')==code:
             return
         pri_key = RSA.importKey(self.privateKey)
         cipher = PKCS1_cipher.new(pri_key)
@@ -99,13 +105,15 @@ class Encryption:
             self.settings.setValue('isTryMode', 0)
             # 当前最晚日期
             lastDate = datetime.strptime(self.lastDate, '%Y-%m-%d').date()
-            self.settings.setValue('lastDate', self.AES_encrypt(str(lastDate+timedelta(days=365*eval(s2)))))
+            self.settings.setValue('lastDate', self.AES_encrypt(
+                str(lastDate+timedelta(days=365*eval(s2)))))
             # 重制机器码
             #self.settings.setValue('regMask', self.randStr(10))
             self.checkRegStatus()
             self.checkWorking()
             self.singleReg = True
-            #print('解密成功')
+            self.settings.setValue('lastCode', code)
+            # print('解密成功')
 
     @staticmethod
     def randStr(num):
@@ -115,7 +123,7 @@ class Encryption:
             salt += choice(H)
         return salt
 
-    def AES_encrypt(self,message):
+    def AES_encrypt(self, message):
         key = 'aes_keysaes_keysaes_keys'
         mode = AES.MODE_OFB
         cryptor = AES.new(key.encode('utf-8'), mode, b'0000000000000000')
@@ -130,7 +138,7 @@ class Encryption:
         result = b2a_hex(ciphertext)
         return result.decode('utf-8')
 
-    def AES_decrypt(self,code):
+    def AES_decrypt(self, code):
         key = 'aes_keysaes_keysaes_keys'
         mode = AES.MODE_OFB
         cryptor = AES.new(key.encode('utf-8'), mode, b'0000000000000000')
@@ -139,23 +147,23 @@ class Encryption:
 
 
 if __name__ == "__main__":
-    parser=argparse.ArgumentParser()
-    parser.add_argument('--checkWorking',type=int,default=0,help='检查是否工作')
-    parser.add_argument('--checkTryMode', type=int, default=0,help='检查是否试用')
-    parser.add_argument('--checkEndDate', type=int, default=0,help='检查截至日期')
-    parser.add_argument('--activateCode', type=str, default='',help='输入注册码')
-    args=parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--checkWorking', type=int, default=0, help='检查是否工作')
+    parser.add_argument('--checkTryMode', type=int, default=0, help='检查是否试用')
+    parser.add_argument('--checkEndDate', type=int, default=0, help='检查截至日期')
+    parser.add_argument('--activateCode', type=str, default='', help='输入注册码')
+    args = parser.parse_args()
 
     crypt = Encryption()
-    if args.checkWorking!=0:
-        print(crypt.working,crypt.localCode)
+    if args.checkWorking != 0:
+        print(crypt.working, crypt.localCode)
 
-    if args.checkEndDate!=0:
+    if args.checkEndDate != 0:
         print(crypt.lastDate)
 
-    if args.checkTryMode!=0:
+    if args.checkTryMode != 0:
         print(crypt.tryMode)
 
-    if args.activateCode!='':
+    if args.activateCode != '':
         crypt.decrypt(str(args.activateCode))
-        print(crypt.working,crypt.localCode)
+        print(crypt.working, crypt.localCode)
