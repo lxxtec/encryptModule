@@ -13,7 +13,7 @@ from uuid import getnode
 
 
 class Encryption:
-    def __init__(self):
+    def __init__(self, appID):
         self.privateKey = """-----BEGIN RSA PRIVATE KEY-----
                             MIICXAIBAAKBgQDR//qsgNjfQ0R8m6L9vglWKNvA0V/aCIonkK81JJolnadEbzX7
                             FXe/7JL5CSoJNYn89vn3L74EzYCA1yHNej6cvIPvtZQ9OczBdp/tP/VrTCr3/89d
@@ -36,6 +36,7 @@ class Encryption:
         self.singleReg = False
         self.outDated = False
         self.mac = self.AES_encrypt(self.get_mac())
+        self.settings.beginGroup(appID)
         if self.settings.value('regMask') == None:  # 初次运行，自动进入试用模式
             self.settings.setValue('regMask', self.mac)
             self.settings.setValue('isRegistered', 0)
@@ -91,7 +92,7 @@ class Encryption:
     def decrypt(self, code):
         if code == '':
             return
-        if self.settings.value('lastCode')==code:
+        if self.settings.value('lastCode') == code:
             return
         pri_key = RSA.importKey(self.privateKey)
         cipher = PKCS1_cipher.new(pri_key)
@@ -148,22 +149,24 @@ class Encryption:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--appID', type=str, default='', help='软件id')
     parser.add_argument('--checkWorking', type=int, default=0, help='检查是否工作')
     parser.add_argument('--checkTryMode', type=int, default=0, help='检查是否试用')
     parser.add_argument('--checkEndDate', type=int, default=0, help='检查截至日期')
     parser.add_argument('--activateCode', type=str, default='', help='输入注册码')
+
     args = parser.parse_args()
 
-    crypt = Encryption()
-    if args.checkWorking != 0:
+    crypt = Encryption(args.appID)
+    if args.checkWorking:
         print(crypt.working, crypt.localCode)
 
-    if args.checkEndDate != 0:
+    if args.checkEndDate:
         print(crypt.lastDate)
 
-    if args.checkTryMode != 0:
+    if args.checkTryMode:
         print(crypt.tryMode)
 
-    if args.activateCode != '':
+    if args.activateCode:
         crypt.decrypt(str(args.activateCode))
         print(crypt.working, crypt.localCode)
