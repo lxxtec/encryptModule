@@ -107,7 +107,7 @@ class Encryption:
             # 当前最晚日期
             lastDate = datetime.strptime(self.lastDate, '%Y-%m-%d').date()
             self.settings.setValue('lastDate', self.AES_encrypt(
-                str(lastDate+timedelta(days=365*eval(s2)))))
+                str(lastDate+timedelta(days=30*eval(s2)))))
             # 重制机器码
             #self.settings.setValue('regMask', self.randStr(10))
             self.checkRegStatus()
